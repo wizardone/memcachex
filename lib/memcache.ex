@@ -553,7 +553,15 @@ defmodule Memcache do
     {:ok, decode(server_options, value)}
   end
 
+  defp decode_response({:ok, {value, flags}}, server_options) when is_binary(value) and is_list(flags) do
+    {:ok, decode(server_options, value)}
+  end
+
   defp decode_response({:ok, value, cas}, server_options) when is_binary(value) do
+    {:ok, decode(server_options, value), cas}
+  end
+
+  defp decode_response({:ok, {value, flags}, cas}, server_options) when is_binary(value) and is_list(flags) do
     {:ok, decode(server_options, value), cas}
   end
 
