@@ -561,12 +561,12 @@ defmodule Memcache do
   end
 
   defp decode_response({:ok, value}, server_options) when is_binary(value) do
-    IO.inspect("2")
+    IO.inspect("1")
     {:ok, decode(server_options, value)}
   end
 
   defp decode_response({:ok, value, flags}, server_options) when is_binary(value) and is_list(flags) do
-    IO.inspect("1")
+    IO.inspect("2")
     IO.inspect(flags)
     {:ok, decode(server_options, value)}
   end
@@ -586,7 +586,10 @@ defmodule Memcache do
     {:ok, Enum.map(values, &decode_response(&1, server_options))}
   end
 
-  defp decode_multi_response(rest, _server_options), do: rest
+  defp decode_multi_response(rest, _server_options) do
+    IO.inspect("!!!multi response")
+    rest
+  end
 
   defp ttl_or_default(server_options, opts) do
     if Keyword.has_key?(opts, :ttl) do
