@@ -135,11 +135,11 @@ defmodule Memcache.ConnectionTest do
     ]
 
     Enum.reduce(cases, nil, fn {command, args, opts, response}, cas ->
-      IO.inspect("----")
+      # IO.inspect("----")
       embed_cas = fn
         :cas ->
-          IO.inspect("NEW CAS")
-          IO.inspect(cas)
+          # IO.inspect("NEW CAS")
+          # IO.inspect(cas)
           cas
         rest -> rest
       end
@@ -155,10 +155,10 @@ defmodule Memcache.ConnectionTest do
           result = execute(pid, command, args, opts)
 
           if tuple_size(result) == 3 do
-            assert {:ok, ^value, cas} = execute(pid, command, args, opts)
+            assert {:ok, ^value, cas} = result
             cas
           else
-            assert {:ok, ^value, cas, []} = execute(pid, command, args, opts)
+            assert {:ok, ^value, cas, []} = result
             cas
           end
 
@@ -472,26 +472,26 @@ defmodule Memcache.ConnectionTest do
     {:ok} = close(pid)
   end
 
-  # test "always responds back to client" do
-  #   {:ok, pid} = start_link(port: 21_211)
-  #   assert {:ok} = execute(pid, :SET, ["hello", "world"])
+  test "always responds back to client" do
+    {:ok, pid} = start_link(port: 21_211)
+    assert {:ok} = execute(pid, :SET, ["hello", "world"])
 
-  #   pids =
-  #     start_hammering(
-  #       fn ->
-  #         assert_value_or_error({:ok}, execute(pid, :SET, ["hello", "world"]))
-  #         assert_value_or_error({:ok, "world", []}, execute(pid, :GET, ["hello"]))
-  #       end,
-  #       8
-  #     )
+    pids =
+      start_hammering(
+        fn ->
+          assert_value_or_error({:ok}, execute(pid, :SET, ["hello", "world"]))
+          assert_value_or_error({:ok, "world", []}, execute(pid, :GET, ["hello"]))
+        end,
+        8
+      )
 
-  #   down("memcache")
-  #   :timer.sleep(100)
-  #   up("memcache")
-  #   :timer.sleep(1000)
-  #   stop_hammering(pids)
-  #   {:ok} = close(pid)
-  # end
+    down("memcache")
+    :timer.sleep(100)
+    up("memcache")
+    :timer.sleep(1000)
+    stop_hammering(pids)
+    {:ok} = close(pid)
+  end
 
   defp assert_value_or_error(value, value), do: true
   defp assert_value_or_error(_value, {:error, _}), do: true

@@ -545,40 +545,37 @@ defmodule Memcache do
   end
 
   defp decode(server_options, {value, flags}) do
-    IO.inspect("FLAGS")
-    IO.inspect(flags)
     coder = server_options.coder
-    apply(elem(coder, 0), :decode, [value, elem(coder, 1)])
+    module = elem(coder, 0)
+    coder_options = elem(coder, 1) ++ [flags: flags]
+    apply(module, :decode, [value, coder_options])
   end
 
-  defp decode(server_options, value) do
-    IO.inspect("NOFLAGS")
-    IO.inspect(value)
-    coder = server_options.coder
-    applied = apply(elem(coder, 0), :decode, [value, elem(coder, 1)])
-    IO.inspect(applied)
-    applied
-  end
+  # TODO remove
+  # defp decode(server_options, value) do
+  #   # IO.inspect("NOFLAGS")
+  #   # IO.inspect(value)
+  #   coder = server_options.coder
+  #   applied = apply(elem(coder, 0), :decode, [value, elem(coder, 1)])
+  #   # IO.inspect(applied)
+  #   applied
+  # end
 
-  defp decode_response({:ok, value}, server_options) when is_binary(value) do
-    IO.inspect("d1")
-    {:ok, decode(server_options, value)}
-  end
+  # TODO remove
+  # defp decode_response({:ok, value}, server_options) when is_binary(value) do
+  #   IO.inspect("d1")
+  #   {:ok, decode(server_options, value)}
+  # end
 
   defp decode_response({:ok, value, flags}, server_options) when is_binary(value) and is_list(flags) do
-    IO.inspect("d2")
-    IO.inspect(flags)
-    {:ok, decode(server_options, value)}
+    {:ok, decode(server_options, {value, flags})}
   end
 
   defp decode_response({:ok, value, cas, flags}, server_options) when is_binary(value) and is_list(flags) do
-    IO.inspect("d3")
-    {:ok, decode(server_options, value), cas}
+    {:ok, decode(server_options, {value, flags}), cas}
   end
 
   defp decode_response(rest, _server_options) do
-    IO.inspect("!REST")
-    IO.inspect(rest)
     rest
   end
 
@@ -587,7 +584,7 @@ defmodule Memcache do
   end
 
   defp decode_multi_response(rest, _server_options) do
-    IO.inspect("!!!multi response")
+    # IO.inspect("!!!multi response")
     rest
   end
 
@@ -617,10 +614,8 @@ defmodule Memcache do
     do: execute_k(server, command, args, opts, get_server_options(server))
 
   defp execute_k(server, command, [key | rest], opts, server_options) do
-    print = fn thing -> IO.inspect("printing");IO.inspect(thing); thing end
     server
     |> execute(command, [key_with_namespace(server_options, key) | rest], opts)
-    |> print.()
     |> decode_response(server_options)
   end
 
@@ -639,7 +634,7 @@ defmodule Memcache do
 
   defp execute(server, command, args, opts \\ []) do
     wat = Connection.execute(server, command, args, opts)
-    IO.inspect(wat)
+    # IO.inspect(wat)
     wat
   end
 
@@ -652,9 +647,6 @@ defmodule Memcache do
         {command, [key_with_namespace(server_options, key) | rest], opts}
       end)
 
-    IO.puts("\n\n")
-    IO.inspect(commands)
-    IO.puts("\n\n")
     server
     |> execute_quiet(commands)
     |> decode_multi_response(server_options)
@@ -667,17 +659,13 @@ defmodule Memcache do
          [key_with_namespace(server_options, key) | [encode(server_options, value) | rest]], opts}
       end)
 
-    IO.puts("\n\n")
-    IO.inspect(commands)
-    IO.puts("\n\n")
-
     server
     |> execute_quiet(commands)
     |> decode_multi_response(server_options)
   end
 
   defp execute_quiet(server, commands) do
-    IO.inspect(commands)
+    # IO.inspect(commands)
     Connection.execute_quiet(server, commands)
   end
 end

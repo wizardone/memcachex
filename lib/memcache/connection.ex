@@ -92,7 +92,7 @@ defmodule Memcache.Connection do
   """
   @spec execute(GenServer.server(), atom, [binary], Keyword.t()) :: Memcache.result()
   def execute(pid, command, args, options \\ []) do
-    IO.inspect(options)
+    # IO.inspect(options)
 
     translate_flags = fn flags ->
       Enum.reduce(flags, 0x0, fn flag, flag_bits ->
@@ -110,8 +110,8 @@ defmodule Memcache.Connection do
       |> Map.put(:cas, Keyword.get(options, :cas, false))
       |> Map.put(:flags, flags)
 
-    IO.inspect(args)
-    IO.inspect(opts)
+    # IO.inspect(args)
+    # IO.inspect(opts)
 
     Connection.call(pid, {:execute, command, args, opts})
   end
@@ -345,9 +345,9 @@ defmodule Memcache.Connection do
   end
 
   defp accumulate_commands({command, args, options}, {packet, commands, i}) do
-    IO.inspect("accumuluate optoins")
-    IO.inspect(options)
-    IO.inspect(args)
+    # IO.inspect("accumuluate optoins")
+    # IO.inspect(options)
+    # IO.inspect(args)
     {[packet | serialize(command, args, options, i)],
      [{i, command, args, %{cas: Keyword.get(options, :cas, false)}} | commands], i + 1}
   end
@@ -442,25 +442,25 @@ defmodule Memcache.Connection do
   @flag_commands [:SET, :SETQ, :ADD, :ADDQ, :REPLACE, :REPLACEQ]
   defp serialize(command, args, opts, opaque \\ 0) do
     opts = Map.new(opts)
-    IO.inspect("serialize")
-    IO.inspect(args)
+    # IO.inspect("serialize")
+    # IO.inspect(args)
     args = if command in @flag_commands do
       args ++ [Map.get(opts, :flags, 0)]
     else
       args
     end
 
-    IO.inspect(args)
-    IO.inspect(opts)
-    IO.inspect(opaque)
+    # IO.inspect(args)
+    # IO.inspect(opts)
+    # IO.inspect(opaque)
 
     do_serialize(command, args, opaque)
   end
 
   defp do_serialize(command, args, opaque) do
     args = [command | [opaque | args]]
-    IO.inspect("ARGS")
-    IO.inspect(args)
+    # IO.inspect("ARGS")
+    # IO.inspect(args)
     apply(Protocol, :to_binary, args)
   end
 end

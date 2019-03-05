@@ -643,14 +643,14 @@ defmodule Memcache.Protocol do
   @get_commands [op(:GET), op(:GETQ), op(:GETK), op(:GETKQ)]
 
   def parse_flags(command, <<extra::32>>) when command in @get_commands do
-    IO.inspect("parse_flags! #{command}, #{inspect(extra)}")
+    # IO.inspect("parse_flags! #{command}, #{inspect(extra)}")
     Enum.reduce(flags(), [], fn {flag_name, flag_bits}, flags ->
       if (extra &&& flag_bits) != 0, do: [flag_name | flags], else: flags
     end)
   end
 
   def parse_flags(command, extra) do
-    IO.inspect("parse_flags #{command} #{inspect(extra)}")
+    # IO.inspect("parse_flags #{command} #{inspect(extra)}")
     []
   end
 
