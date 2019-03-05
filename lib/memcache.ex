@@ -561,18 +561,18 @@ defmodule Memcache do
   end
 
   defp decode_response({:ok, value}, server_options) when is_binary(value) do
-    IO.inspect("1")
+    IO.inspect("d1")
     {:ok, decode(server_options, value)}
   end
 
   defp decode_response({:ok, value, flags}, server_options) when is_binary(value) and is_list(flags) do
-    IO.inspect("2")
+    IO.inspect("d2")
     IO.inspect(flags)
     {:ok, decode(server_options, value)}
   end
 
   defp decode_response({:ok, value, cas, flags}, server_options) when is_binary(value) and is_list(flags) do
-    IO.inspect("3")
+    IO.inspect("d3")
     {:ok, decode(server_options, value), cas}
   end
 
@@ -652,6 +652,9 @@ defmodule Memcache do
         {command, [key_with_namespace(server_options, key) | rest], opts}
       end)
 
+    IO.puts("\n\n")
+    IO.inspect(commands)
+    IO.puts("\n\n")
     server
     |> execute_quiet(commands)
     |> decode_multi_response(server_options)
@@ -664,12 +667,17 @@ defmodule Memcache do
          [key_with_namespace(server_options, key) | [encode(server_options, value) | rest]], opts}
       end)
 
+    IO.puts("\n\n")
+    IO.inspect(commands)
+    IO.puts("\n\n")
+
     server
     |> execute_quiet(commands)
     |> decode_multi_response(server_options)
   end
 
   defp execute_quiet(server, commands) do
+    IO.inspect(commands)
     Connection.execute_quiet(server, commands)
   end
 end

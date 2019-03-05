@@ -378,6 +378,10 @@ defmodule Memcache.Protocol do
   end
 
   def to_binary(:SET, opaque, key, value, cas, expiry, flag) do
+    if cas == [] do
+      raise "can't have a list here. you need to fix something."
+    end
+
     [
       bcat([request(), opb(:SET)]),
       <<byte_size(key)::size(16)>>,

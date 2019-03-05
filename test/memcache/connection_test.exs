@@ -103,7 +103,7 @@ defmodule Memcache.ConnectionTest do
       {:GET, ["hello"], [cas: true], {:ok, "another", :cas}},
       {:SET, ["hello", "world", :cas], [cas: true], {:ok, :cas}},
       {:SET, ["hello", "move on", :cas], [], {:ok}},
-      {:GET, ["hello"], [], {:ok, "move on"}},
+      {:GET, ["hello"], [], {:ok, "move on", []}},
       {:ADD, ["add", "world"], [cas: true], {:ok, :cas}},
       {:DELETE, ["add", :cas], [], {:ok}},
       {:ADD, ["add", "world"], [], {:ok}},
@@ -112,7 +112,7 @@ defmodule Memcache.ConnectionTest do
       {:REPLACE, ["add", "world", :cas], [], {:ok}},
       {:REPLACE, ["add", "world", :cas], [], @cas_error},
       {:DELETE, ["add", :cas], [], @cas_error},
-      {:GET, ["add"], [cas: true], {:ok, "world", :cas}},
+      {:GET, ["add"], [cas: true], {:ok, "world", :cas, []}},
       {:DELETE, ["add", :cas], [], {:ok}},
       {:INCREMENT, ["count", 1, 5], [cas: true], {:ok, 5, :cas}},
       {:INCREMENT, ["count", 1, 5], [], {:ok, 6}},
@@ -126,7 +126,7 @@ defmodule Memcache.ConnectionTest do
       {:APPEND, ["new", "hope", :cas], [], {:ok}},
       {:APPEND, ["new", "hope", :cas], [], @cas_error},
       {:APPEND, ["new", "hope"], [cas: true], {:ok, :cas}},
-      {:GET, ["new"], [], {:ok, "new hopehope"}},
+      {:GET, ["new"], [], {:ok, "new hopehope", []}},
       {:SET, ["new", "hope"], [cas: true], {:ok, :cas}},
       {:PREPEND, ["new", "new ", :cas], [], {:ok}},
       {:PREPEND, ["new", "new ", :cas], [], @cas_error},
@@ -135,8 +135,12 @@ defmodule Memcache.ConnectionTest do
     ]
 
     Enum.reduce(cases, nil, fn {command, args, opts, response}, cas ->
+      IO.inspect("----")
       embed_cas = fn
-        :cas -> cas
+        :cas ->
+          IO.inspect("NEW CAS")
+          IO.inspect(cas)
+          cas
         rest -> rest
       end
 
@@ -148,7 +152,18 @@ defmodule Memcache.ConnectionTest do
           cas
 
         {:ok, value, :cas} ->
-          assert {:ok, ^value, cas} = execute(pid, command, args, opts)
+          result = execute(pid, command, args, opts)
+
+          if tuple_size(result) == 3 do
+            assert {:ok, ^value, cas} = execute(pid, command, args, opts)
+            cas
+          else
+            assert {:ok, ^value, cas, []} = execute(pid, command, args, opts)
+            cas
+          end
+
+        {:ok, value, :cas, flags} ->
+          assert {:ok, ^value, cas, ^flags} = execute(pid, command, args, opts)
           cas
 
         rest ->
@@ -307,7 +322,7 @@ defmodule Memcache.ConnectionTest do
     {:ok} = execute(pid, :FLUSH, [])
     {:ok} = execute(pid, :SET, ["new", "hope"])
 
-    assert {:ok, [{:ok, "hope", cas}, {:ok, "hope", cas}]} =
+    assert {:ok, [{:ok, "hope", cas, []}, {:ok, "hope", cas, []}]} =
              execute_quiet(pid, [{:GETQ, ["new"], [cas: true]}, {:GETQ, ["new"], [cas: true]}])
 
     assert {:ok, [{:ok, cas}, @cas_error]} =
@@ -316,7 +331,7 @@ defmodule Memcache.ConnectionTest do
                {:SETQ, ["new", "hope", cas]}
              ])
 
-    assert {:ok, [@cas_error, {:ok}, {:error, "Key not found"}, {:ok}, {:ok, "hope", cas}]} =
+    assert {:ok, [@cas_error, {:ok}, {:error, "Key not found"}, {:ok}, {:ok, "hope", cas, []}]} =
              execute_quiet(pid, [
                {:DELETEQ, ["new", 1492]},
                {:DELETEQ, ["new", cas]},
@@ -339,7 +354,7 @@ defmodule Memcache.ConnectionTest do
                {:INCREMENT, ["count", 1, 5], [cas: true]}
              ])
 
-    assert {:ok, [{:ok}, {:ok, "7"}, @cas_error, {:ok, "7"}, {:ok}, {:ok, "12"}, {:ok}]} =
+    assert {:ok, [{:ok}, {:ok, "7", []}, @cas_error, {:ok, "7", []}, {:ok}, {:ok, "12", []}, {:ok}]} =
              execute_quiet(pid, [
                {:INCREMENTQ, ["count", 1, 5, cas]},
                {:GETQ, ["count"]},
@@ -356,7 +371,7 @@ defmodule Memcache.ConnectionTest do
                {:DECREMENT, ["count", 1, 5], [cas: true]}
              ])
 
-    assert {:ok, [{:ok}, {:ok, "3"}, @cas_error, {:ok, "3"}, {:ok}, {:ok, "0"}, {:ok}]} ==
+    assert {:ok, [{:ok}, {:ok, "3", []}, @cas_error, {:ok, "3", []}, {:ok}, {:ok, "0", []}, {:ok}]} ==
              execute_quiet(pid, [
                {:DECREMENTQ, ["count", 1, 5, cas]},
                {:GETQ, ["count"]},
@@ -374,7 +389,7 @@ defmodule Memcache.ConnectionTest do
                {:REPLACE, ["add", "world"], [cas: true]}
              ])
 
-    assert {:ok, [{:ok}, {:ok, "world"}, @cas_error, {:ok, "world"}, {:ok}]} ==
+    assert {:ok, [{:ok}, {:ok, "world", []}, @cas_error, {:ok, "world", []}, {:ok}]} ==
              execute_quiet(pid, [
                {:REPLACEQ, ["add", "world", cas]},
                {:GETQ, ["add"]},
@@ -394,13 +409,13 @@ defmodule Memcache.ConnectionTest do
     assert {:ok,
             [
               {:ok},
-              {:ok, "new hope"},
+              {:ok, "new hope", []},
               @cas_error,
-              {:ok, "new hope"},
+              {:ok, "new hope", []},
               {:ok},
-              {:ok, "new hope"},
+              {:ok, "new hope", []},
               @cas_error,
-              {:ok, "new hope"},
+              {:ok, "new hope", []},
               {:ok},
               {:ok}
             ]} ==

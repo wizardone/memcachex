@@ -115,6 +115,7 @@ defmodule Memcache.Receiver do
 
   defp append_cas_version({:ok}, %{cas: cas_version}), do: {:ok, cas_version}
   defp append_cas_version({:ok, value}, %{cas: cas_version}), do: {:ok, value, cas_version}
+  defp append_cas_version({:ok, value, flags}, %{cas: cas_version}), do: {:ok, value, cas_version, flags}
   defp append_cas_version(error, %{cas: _cas_version}), do: error
 
   defp recv_response_quiet([], _sock, results, buffer) do
@@ -132,6 +133,9 @@ defmodule Memcache.Receiver do
             {rest_commands, results} =
               match_response(commands, results, header, Protocol.parse_body(header, body))
 
+            IO.inspect(rest_commands)
+            IO.inspect(results)
+
             recv_response_quiet(rest_commands, sock, results, rest)
 
           err ->
@@ -147,14 +151,21 @@ defmodule Memcache.Receiver do
   end
 
   defp match_response([{i, _command, _args, %{cas: true}} | rest], results, header, {i, response}) do
+    IO.inspect("r1")
+    IO.inspect(response)
+    IO.puts("--")
     {rest, [append_cas_version(response, header) | results]}
   end
 
   defp match_response([{i, _command, _args, _opts} | rest], results, _header, {i, response}) do
+    IO.inspect("r2")
+    IO.inspect(response)
+    IO.puts("--")
     {rest, [response | results]}
   end
 
   defp match_response([{_i, command, _args, _opts} | rest], results, header, response_with_index) do
+    IO.inspect("r3")
     match_response(
       rest,
       [Protocol.quiet_response(command) | results],
