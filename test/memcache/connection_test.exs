@@ -135,12 +135,8 @@ defmodule Memcache.ConnectionTest do
     ]
 
     Enum.reduce(cases, nil, fn {command, args, opts, response}, cas ->
-      # IO.inspect("----")
       embed_cas = fn
-        :cas ->
-          # IO.inspect("NEW CAS")
-          # IO.inspect(cas)
-          cas
+        :cas -> cas
         rest -> rest
       end
 

@@ -544,6 +544,19 @@ defmodule Memcache do
     apply(elem(coder, 0), :encode, [value, elem(coder, 1)])
   end
 
+  defp encoder_flags(server_options, value) do
+    coder = server_options.coder
+    apply(elem(coder, 0), :encode_flags, [value, elem(coder, 1)])
+  end
+
+  defp opts_with_flags(opts, encoder_flags) do
+    given_flags = Keyword.get(opts, :flags, [])
+    Keyword.put(opts, :flags, merge_flags(encoder_flags, given_flags))
+  end
+
+  defp merge_flags(encoder_flags, []), do: encoder_flags
+  defp merge_flags(_encoder_flags, [_head | []] = given_flags), do: given_flags
+
   defp decode(server_options, {value, flags}) do
     coder = server_options.coder
     module = elem(coder, 0)
@@ -553,11 +566,11 @@ defmodule Memcache do
 
   # TODO remove
   # defp decode(server_options, value) do
-  #   # IO.inspect("NOFLAGS")
-  #   # IO.inspect(value)
+  #   IO.inspect("NOFLAGS")
+  #   IO.inspect(value)
   #   coder = server_options.coder
   #   applied = apply(elem(coder, 0), :decode, [value, elem(coder, 1)])
-  #   # IO.inspect(applied)
+  #   IO.inspect(applied)
   #   applied
   # end
 
@@ -623,19 +636,19 @@ defmodule Memcache do
     do: execute_kv(server, command, args, opts, get_server_options(server))
 
   defp execute_kv(server, command, [key | [value | rest]], opts, server_options) do
+    opts = opts_with_flags(opts, encoder_flags(server_options, value))
+    # IO.inspect("kv #{inspect(opts_with_flags(opts, encoder_flags(server_options, value)))}")
     server
     |> execute(
       command,
       [key_with_namespace(server_options, key) | [encode(server_options, value) | rest]],
-      opts
+      opts #opts_with_flags(opts, encoder_flags(server_options, value))
     )
     |> decode_response(server_options)
   end
 
   defp execute(server, command, args, opts \\ []) do
-    wat = Connection.execute(server, command, args, opts)
-    # IO.inspect(wat)
-    wat
+    Connection.execute(server, command, args, opts)
   end
 
   defp execute_quiet_k(server, commands),
@@ -656,7 +669,9 @@ defmodule Memcache do
     commands =
       Enum.map(commands, fn {command, [key | [value | rest]], opts} ->
         {command,
-         [key_with_namespace(server_options, key) | [encode(server_options, value) | rest]], opts}
+         [key_with_namespace(server_options, key) | [encode(server_options, value) | rest]],
+         opts#opts_with_flags(opts, encoder_flags(server_options, value))
+        }
       end)
 
     server

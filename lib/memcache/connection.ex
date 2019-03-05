@@ -439,28 +439,33 @@ defmodule Memcache.Connection do
     end
   end
 
+  @default_expiry 0
+  @default_cas 0
   @flag_commands [:SET, :SETQ, :ADD, :ADDQ, :REPLACE, :REPLACEQ]
-  defp serialize(command, args, opts, opaque \\ 0) do
+  defp serialize(command, args, opts, opaque \\ 0)
+  defp serialize(command, args, opts, opaque) when command in @flag_commands do
+    # IO.inspect("We are serialising with flags")
     opts = Map.new(opts)
-    # IO.inspect("serialize")
-    # IO.inspect(args)
-    args = if command in @flag_commands do
-      args ++ [Map.get(opts, :flags, 0)]
-    else
-      args
-    end
+    flags = Map.get(opts, :flags, 0)
 
     # IO.inspect(args)
-    # IO.inspect(opts)
-    # IO.inspect(opaque)
+
+    args = case length(args) do
+      2 -> args ++ [@default_expiry, @default_cas, flags]
+      3 -> args ++ [@default_cas, flags]
+      4 -> args ++ [flags]
+    end
 
     do_serialize(command, args, opaque)
   end
 
+  defp serialize(command, args, _opts, opaque) do
+    do_serialize(command, args, opaque)
+  end
+
   defp do_serialize(command, args, opaque) do
-    args = [command | [opaque | args]]
-    # IO.inspect("ARGS")
-    # IO.inspect(args)
-    apply(Protocol, :to_binary, args)
+    # IO.inspect("serialize")
+    # IO.inspect([command | [opaque | args]])
+    apply(Protocol, :to_binary, [command | [opaque | args]])
   end
 end

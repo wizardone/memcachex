@@ -412,6 +412,10 @@ defmodule Memcache.Protocol do
   end
 
   def to_binary(:ADD, opaque, key, value, expiry, cas, flag) do
+    # IO.inspect("value: #{value}")
+    # IO.inspect("expiry: #{expiry}")
+    # IO.inspect("cas: #{cas}")
+    # IO.inspect("flag: #{flag}")
     [
       bcat([request(), opb(:ADD)]),
       <<byte_size(key)::size(16)>>,
@@ -641,16 +645,13 @@ defmodule Memcache.Protocol do
   end
 
   @get_commands [op(:GET), op(:GETQ), op(:GETK), op(:GETKQ)]
-
   def parse_flags(command, <<extra::32>>) when command in @get_commands do
-    # IO.inspect("parse_flags! #{command}, #{inspect(extra)}")
     Enum.reduce(flags(), [], fn {flag_name, flag_bits}, flags ->
       if (extra &&& flag_bits) != 0, do: [flag_name | flags], else: flags
     end)
   end
 
-  def parse_flags(command, extra) do
-    # IO.inspect("parse_flags #{command} #{inspect(extra)}")
+  def parse_flags(_command, _extra) do
     []
   end
 
