@@ -544,28 +544,43 @@ defmodule Memcache do
     apply(elem(coder, 0), :encode, [value, elem(coder, 1)])
   end
 
-  defp decode(server_options, value) do
+  defp decode(server_options, {value, flags}) do
+    IO.inspect("FLAGS")
+    IO.inspect(flags)
     coder = server_options.coder
     apply(elem(coder, 0), :decode, [value, elem(coder, 1)])
   end
 
+  defp decode(server_options, value) do
+    IO.inspect("NOFLAGS")
+    IO.inspect(value)
+    coder = server_options.coder
+    applied = apply(elem(coder, 0), :decode, [value, elem(coder, 1)])
+    IO.inspect(applied)
+    applied
+  end
+
   defp decode_response({:ok, value}, server_options) when is_binary(value) do
+    IO.inspect("2")
     {:ok, decode(server_options, value)}
   end
 
-  defp decode_response({:ok, {value, flags}}, server_options) when is_binary(value) and is_list(flags) do
+  defp decode_response({:ok, value, flags}, server_options) when is_binary(value) and is_list(flags) do
+    IO.inspect("1")
+    IO.inspect(flags)
     {:ok, decode(server_options, value)}
   end
 
-  defp decode_response({:ok, value, cas}, server_options) when is_binary(value) do
+  defp decode_response({:ok, value, cas, flags}, server_options) when is_binary(value) and is_list(flags) do
+    IO.inspect("3")
     {:ok, decode(server_options, value), cas}
   end
 
-  defp decode_response({:ok, {value, flags}, cas}, server_options) when is_binary(value) and is_list(flags) do
-    {:ok, decode(server_options, value), cas}
+  defp decode_response(rest, _server_options) do
+    IO.inspect("!REST")
+    IO.inspect(rest)
+    rest
   end
-
-  defp decode_response(rest, _server_options), do: rest
 
   defp decode_multi_response({:ok, values}, server_options) when is_list(values) do
     {:ok, Enum.map(values, &decode_response(&1, server_options))}
@@ -599,8 +614,10 @@ defmodule Memcache do
     do: execute_k(server, command, args, opts, get_server_options(server))
 
   defp execute_k(server, command, [key | rest], opts, server_options) do
+    print = fn thing -> IO.inspect("printing");IO.inspect(thing); thing end
     server
     |> execute(command, [key_with_namespace(server_options, key) | rest], opts)
+    |> print.()
     |> decode_response(server_options)
   end
 
@@ -618,7 +635,9 @@ defmodule Memcache do
   end
 
   defp execute(server, command, args, opts \\ []) do
-    Connection.execute(server, command, args, opts)
+    wat = Connection.execute(server, command, args, opts)
+    IO.inspect(wat)
+    wat
   end
 
   defp execute_quiet_k(server, commands),

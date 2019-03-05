@@ -92,9 +92,7 @@ defmodule Memcache.Connection do
   """
   @spec execute(GenServer.server(), atom, [binary], Keyword.t()) :: Memcache.result()
   def execute(pid, command, args, options \\ []) do
-    if options[:flags] do
-      IO.inspect(options)
-    end
+    IO.inspect(options)
 
     translate_flags = fn flags ->
       Enum.reduce(flags, 0x0, fn flag, flag_bits ->
@@ -112,10 +110,8 @@ defmodule Memcache.Connection do
       |> Map.put(:cas, Keyword.get(options, :cas, false))
       |> Map.put(:flags, flags)
 
-    if options[:flags] do
-      IO.inspect(args)
-      IO.inspect(opts)
-    end
+    IO.inspect(args)
+    IO.inspect(opts)
 
     Connection.call(pid, {:execute, command, args, opts})
   end
@@ -448,6 +444,11 @@ defmodule Memcache.Connection do
     else
       args
     end
+
+    IO.inspect("serialize")
+    IO.inspect(args)
+    IO.inspect(opts)
+    IO.inspect(opaque)
 
     do_serialize(command, args, opaque)
   end

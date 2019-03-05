@@ -509,13 +509,13 @@ defmodule Memcache.Protocol do
 
     flags = parse_flags(op, extra)
 
-    {opaque, {:ok, {value, flags}}}
+    {opaque, {:ok, value, flags}}
   end
 
   def parse_body(
         %Header{
           status: 0x0000,
-          opcode: op(:GETQ),
+          opcode: op(:GETQ) = op,
           extra_length: extra_length,
           total_body_length: total_body_length,
           opaque: opaque
@@ -523,14 +523,17 @@ defmodule Memcache.Protocol do
         rest
       ) do
     value_size = total_body_length - extra_length
-    <<_extra::binary-size(extra_length), value::binary-size(value_size)>> = rest
-    {opaque, {:ok, value}}
+    <<extra::binary-size(extra_length), value::binary-size(value_size)>> = rest
+
+    flags = parse_flags(op, extra)
+
+    {opaque, {:ok, value, flags}}
   end
 
   def parse_body(
         %Header{
           status: 0x0000,
-          opcode: op(:GETK),
+          opcode: op(:GETK) = op,
           extra_length: extra_length,
           key_length: key_length,
           total_body_length: total_body_length,
@@ -540,16 +543,18 @@ defmodule Memcache.Protocol do
       ) do
     value_size = total_body_length - extra_length - key_length
 
-    <<_extra::binary-size(extra_length), key::binary-size(key_length),
+    <<extra::binary-size(extra_length), key::binary-size(key_length),
       value::binary-size(value_size)>> = rest
 
-    {opaque, {:ok, key, value}}
+    flags = parse_flags(op, extra)
+
+    {opaque, {:ok, key, value, flags}}
   end
 
   def parse_body(
         %Header{
           status: 0x0000,
-          opcode: op(:GETKQ),
+          opcode: op(:GETKQ) = op,
           extra_length: extra_length,
           key_length: key_length,
           total_body_length: total_body_length,
@@ -559,10 +564,12 @@ defmodule Memcache.Protocol do
       ) do
     value_size = total_body_length - extra_length - key_length
 
-    <<_extra::binary-size(extra_length), key::binary-size(key_length),
+    <<extra::binary-size(extra_length), key::binary-size(key_length),
       value::binary-size(value_size)>> = rest
 
-    {opaque, {:ok, key, value}}
+    flags = parse_flags(op, extra)
+
+    {opaque, {:ok, key, value, flags}}
   end
 
   def parse_body(%Header{status: 0x0000, opcode: op(:VERSION), opaque: opaque}, rest) do
