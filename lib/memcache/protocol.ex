@@ -397,6 +397,10 @@ defmodule Memcache.Protocol do
   end
 
   def to_binary(:SETQ, opaque, key, value, cas, expiry, flag) do
+    # IO.inspect("value: #{value}")
+    # IO.inspect("expiry: #{expiry}")
+    # IO.inspect("cas: #{cas}")
+    # IO.inspect("flag: #{inspect(flag)}")
     [
       bcat([request(), opb(:SETQ)]),
       <<byte_size(key)::size(16)>>,
@@ -412,10 +416,6 @@ defmodule Memcache.Protocol do
   end
 
   def to_binary(:ADD, opaque, key, value, expiry, cas, flag) do
-    # IO.inspect("value: #{value}")
-    # IO.inspect("expiry: #{expiry}")
-    # IO.inspect("cas: #{cas}")
-    # IO.inspect("flag: #{flag}")
     [
       bcat([request(), opb(:ADD)]),
       <<byte_size(key)::size(16)>>,

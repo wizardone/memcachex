@@ -92,26 +92,15 @@ defmodule Memcache.Connection do
   """
   @spec execute(GenServer.server(), atom, [binary], Keyword.t()) :: Memcache.result()
   def execute(pid, command, args, options \\ []) do
-    # IO.inspect(options)
-
-    translate_flags = fn flags ->
-      Enum.reduce(flags, 0x0, fn flag, flag_bits ->
-        flag_bit(flag) ||| flag_bits
-      end)
-    end
-
     flags =
       options
       |> Keyword.get(:flags, [])
-      |> translate_flags.()
+      |> translate_flags()
 
     opts =
       %{}
       |> Map.put(:cas, Keyword.get(options, :cas, false))
       |> Map.put(:flags, flags)
-
-    # IO.inspect(args)
-    # IO.inspect(opts)
 
     Connection.call(pid, {:execute, command, args, opts})
   end
@@ -130,6 +119,7 @@ defmodule Memcache.Connection do
   @spec execute_quiet(GenServer.server(), [{atom, [binary]} | {atom, [binary], Keyword.t()}]) ::
           {:ok, [Memcache.result()]} | {:error, atom}
   def execute_quiet(pid, commands) do
+    commands = normalise_flags(commands)
     Connection.call(pid, {:execute_quiet, commands})
   end
 
@@ -281,6 +271,26 @@ defmodule Memcache.Connection do
     end
 
     :ok
+  end
+
+  @spec normalise_flags([{atom, [binary]} | {atom, [binary], Keyword.t()}]) ::
+    [{atom, [binary]} | {atom, [binary], Keyword.t()}]
+  defp normalise_flags(commands) do
+    Enum.map(commands, fn
+      {_command, _args} = command ->
+        command
+
+      {command, args, opts} ->
+        opts = Keyword.update(opts, :flags, 0, &translate_flags/1)
+      {command, args, opts}
+    end)
+  end
+
+  @spec translate_flags(list(atom)) :: pos_integer
+  defp translate_flags(flags) do
+    Enum.reduce(flags, 0x0, fn flag, flag_bits ->
+      flag_bit(flag) ||| flag_bits
+    end)
   end
 
   defp maybe_activate_sock(state) do
@@ -449,6 +459,7 @@ defmodule Memcache.Connection do
     flags = Map.get(opts, :flags, 0)
 
     # IO.inspect(args)
+    # IO.inspect(flags)
 
     args = case length(args) do
       2 -> args ++ [@default_expiry, @default_cas, flags]

@@ -564,22 +564,6 @@ defmodule Memcache do
     apply(module, :decode, [value, coder_options])
   end
 
-  # TODO remove
-  # defp decode(server_options, value) do
-  #   IO.inspect("NOFLAGS")
-  #   IO.inspect(value)
-  #   coder = server_options.coder
-  #   applied = apply(elem(coder, 0), :decode, [value, elem(coder, 1)])
-  #   IO.inspect(applied)
-  #   applied
-  # end
-
-  # TODO remove
-  # defp decode_response({:ok, value}, server_options) when is_binary(value) do
-  #   IO.inspect("d1")
-  #   {:ok, decode(server_options, value)}
-  # end
-
   defp decode_response({:ok, value, flags}, server_options) when is_binary(value) and is_list(flags) do
     {:ok, decode(server_options, {value, flags})}
   end
@@ -597,7 +581,6 @@ defmodule Memcache do
   end
 
   defp decode_multi_response(rest, _server_options) do
-    # IO.inspect("!!!multi response")
     rest
   end
 
@@ -636,13 +619,11 @@ defmodule Memcache do
     do: execute_kv(server, command, args, opts, get_server_options(server))
 
   defp execute_kv(server, command, [key | [value | rest]], opts, server_options) do
-    opts = opts_with_flags(opts, encoder_flags(server_options, value))
-    # IO.inspect("kv #{inspect(opts_with_flags(opts, encoder_flags(server_options, value)))}")
     server
     |> execute(
       command,
       [key_with_namespace(server_options, key) | [encode(server_options, value) | rest]],
-      opts #opts_with_flags(opts, encoder_flags(server_options, value))
+      opts_with_flags(opts, encoder_flags(server_options, value))
     )
     |> decode_response(server_options)
   end
@@ -668,9 +649,11 @@ defmodule Memcache do
   defp execute_quiet_kv(server, commands, server_options) do
     commands =
       Enum.map(commands, fn {command, [key | [value | rest]], opts} ->
+        # IO.inspect("#{command} #{inspect(opts)} // #{inspect(opts_with_flags(opts, encoder_flags(server_options, value)))}")
+        # IO.inspect(opts_with_flags(opts, encoder_flags(server_options, value)))
         {command,
          [key_with_namespace(server_options, key) | [encode(server_options, value) | rest]],
-         opts#opts_with_flags(opts, encoder_flags(server_options, value))
+         opts_with_flags(opts, encoder_flags(server_options, value))
         }
       end)
 
@@ -680,7 +663,6 @@ defmodule Memcache do
   end
 
   defp execute_quiet(server, commands) do
-    # IO.inspect(commands)
     Connection.execute_quiet(server, commands)
   end
 end
