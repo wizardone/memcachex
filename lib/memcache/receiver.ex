@@ -30,10 +30,7 @@ defmodule Memcache.Receiver do
   end
 
   def handle_cast({:read, client, command, opts}, %State{sock: sock, buffer: buffer} = s) do
-    response = recv_response(command, sock, buffer, opts)
-    # IO.inspect("RESPONSE")
-    # IO.inspect(response)
-    reply_or_disconnect(response, client, s)
+    reply_or_disconnect(recv_response(command, sock, buffer, opts), client, s)
   end
 
   def handle_cast({:read_quiet, client, commands}, %State{sock: sock, buffer: buffer} = s) do
@@ -41,7 +38,6 @@ defmodule Memcache.Receiver do
   end
 
   defp reply_or_disconnect({:ok, response, buffer}, client, s) do
-    # IO.inspect("replyordisc")
     Connection.reply(client, response)
     send(s.parent, {:receiver, :done, client, self()})
     {:noreply, %{s | buffer: buffer}}
@@ -82,16 +78,12 @@ defmodule Memcache.Receiver do
   defp recv_body(header, sock, buffer) do
     body_size = Protocol.total_body_size(header)
 
-    # IO.inspect("recv_body")
     if body_size > 0 do
       with {:ok, body, buffer} <- read(sock, buffer, body_size) do
         response =
           header
           |> Protocol.parse_body(body)
           |> elem(1)
-
-        # IO.inspect("response")
-        # IO.inspect(response)
 
         {:ok, response, buffer}
       end
@@ -133,9 +125,6 @@ defmodule Memcache.Receiver do
             {rest_commands, results} =
               match_response(commands, results, header, Protocol.parse_body(header, body))
 
-            # IO.inspect(rest_commands)
-            # IO.inspect(results)
-
             recv_response_quiet(rest_commands, sock, results, rest)
 
           err ->
@@ -159,7 +148,6 @@ defmodule Memcache.Receiver do
   end
 
   defp match_response([{_i, command, _args, _opts} | rest], results, header, response_with_index) do
-    # IO.inspect("r3")
     match_response(
       rest,
       [Protocol.quiet_response(command) | results],

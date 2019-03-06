@@ -355,9 +355,6 @@ defmodule Memcache.Connection do
   end
 
   defp accumulate_commands({command, args, options}, {packet, commands, i}) do
-    # IO.inspect("accumuluate optoins")
-    # IO.inspect(options)
-    # IO.inspect(args)
     {[packet | serialize(command, args, options, i)],
      [{i, command, args, %{cas: Keyword.get(options, :cas, false)}} | commands], i + 1}
   end
@@ -454,12 +451,8 @@ defmodule Memcache.Connection do
   @flag_commands [:SET, :SETQ, :ADD, :ADDQ, :REPLACE, :REPLACEQ]
   defp serialize(command, args, opts, opaque \\ 0)
   defp serialize(command, args, opts, opaque) when command in @flag_commands do
-    # IO.inspect("We are serialising with flags")
     opts = Map.new(opts)
     flags = Map.get(opts, :flags, 0)
-
-    # IO.inspect(args)
-    # IO.inspect(flags)
 
     args = case length(args) do
       2 -> args ++ [@default_expiry, @default_cas, flags]
@@ -475,8 +468,6 @@ defmodule Memcache.Connection do
   end
 
   defp do_serialize(command, args, opaque) do
-    # IO.inspect("serialize")
-    # IO.inspect([command | [opaque | args]])
     apply(Protocol, :to_binary, [command | [opaque | args]])
   end
 end

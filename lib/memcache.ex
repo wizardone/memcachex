@@ -649,8 +649,6 @@ defmodule Memcache do
   defp execute_quiet_kv(server, commands, server_options) do
     commands =
       Enum.map(commands, fn {command, [key | [value | rest]], opts} ->
-        # IO.inspect("#{command} #{inspect(opts)} // #{inspect(opts_with_flags(opts, encoder_flags(server_options, value)))}")
-        # IO.inspect(opts_with_flags(opts, encoder_flags(server_options, value)))
         {command,
          [key_with_namespace(server_options, key) | [encode(server_options, value) | rest]],
          opts_with_flags(opts, encoder_flags(server_options, value))
