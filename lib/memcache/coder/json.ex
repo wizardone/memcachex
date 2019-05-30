@@ -6,7 +6,8 @@ if Code.ensure_loaded?(Poison) do
     """
     use Memcache.Coder
 
-    def encode(value, options), do: Poison.encode_to_iodata!(value, options)
+    # def encode(value, options), do: Poison.encode_to_iodata!(value, options)
+    def encode(value, options), do: Poison.encode!(value, options)
     def encode_flags(_value, _options), do: [:serialised]
     def decode(value, options), do: Poison.decode!(value, options)
   end
